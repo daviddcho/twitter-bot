@@ -22,31 +22,39 @@ def store_last_seen_id(last_seen_id, file_name):
     return
 
 
-CONSUMER_KEY = os.environ.get('CONSUMER_KEY')
-CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET')
-ACCESS_KEY = os.environ.get('ACCESS_KEY')
-ACCESS_SECRET = os.environ.get('ACCESS_SECRET')
+def create_api():
+    CONSUMER_KEY = os.environ.get('CONSUMER_KEY')
+    CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET')
+    ACCESS_KEY = os.environ.get('ACCESS_KEY')
+    ACCESS_SECRET = os.environ.get('ACCESS_SECRET')
+
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
+    api = tweepy.API(auth)
+    return api
 
 
-auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
-api = tweepy.API(auth)
-
-def reply_to_tweets():
-    print('retrieving and replying to tweets...')
+def reply_to_tweets(api):
+    print('Retrieving and replying to tweets...')
     last_seen_id = retrieve_last_seen_id(FILE_NAME)
     mentions = api.mentions_timeline(last_seen_id, tweet_mode='extended')
     for mention in reversed(mentions):
-        print(str(mention.id) + ' - ' + mention.text)
+        print(str(mention.id) + ' - ' + mention.full_text)
         last_seen_id = mention.id 
         store_last_seen_id(last_seen_id, FILE_NAME)
         if '#ayo123' in mention.full_text.lower():
             print('found #ayo123')
             print('responding back...')
-            api.update_status('@' + mention.user.screen_name + '#ayo123 back to you!', mention.id)
+            api.create_favorite(mention.id)
+            api.update_status('@' + mention.user.screen_name + '#ayo123 back to you!!!', mention.id)
 
 
-while True:
-    reply_to_tweets()
-    time.sleep(15)
+def main():
+    api = create_api()
+    while True:
+        reply_to_tweets(api)
+        time.sleep(15)
 
+
+if __name__ == "__main__":
+    main()
